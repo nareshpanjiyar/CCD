@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>Patients</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-users me-2"></i>Patients Management</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#patientModal" onclick="resetForm()">
+            <i class="fas fa-plus-circle me-2"></i>Add New Patient
+        </button>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Search</label>
+                    <input type="text" id="searchInput" class="form-control" placeholder="Name, phone, email...">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Gender</label>
+                    <select id="genderFilter" class="form-select">
+                        <option value="all">All</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Blood Group</label>
+                    <select id="bloodFilter" class="form-select">
+                        <option value="all">All</option>
+                        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                        <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patients Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 searchable-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th><th>Username</th><th>Name</th><th>Age</th><th>Gender</th><th>Phone</th><th>Blood</th><th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="patient : ${patients}">
+                            <td th:text="${patient.id}"></td>
+                            <td th:text="${patient.username}"></td>
+                            <td th:text="${patient.name}"></td>
+                            <td th:text="${patient.age}"></td>
+                            <td th:text="${patient.gender}"></td>
+                            <td th:text="${patient.phone}"></td>
+                            <td>
+                                <span th:if="${patient.bloodGroup}" class="badge bg-light text-dark" th:text="${patient.bloodGroup}"></span>
+                                <span th:unless="${patient.bloodGroup}">—</span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary edit-btn"
+                                        th:attr="data-id=${patient.id}, data-username=${patient.username}, data-name=${patient.name}, data-age=${patient.age}, data-gender=${patient.gender}, data-phone=${patient.phone}, data-email=${patient.email}, data-address=${patient.address}, data-blood=${patient.bloodGroup}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <a th:href="@{/admin/patients/delete/{id}(id=${patient.id})}" class="btn btn-sm btn-outline-danger" onclick="return confirmDelete()">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${patients.empty}">
+                            <td colspan="8" class="text-center py-4 text-muted">No patients found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal fade" id="patientModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form th:action="@{/admin/patients/save}" method="post" th:object="${patientDto}">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalTitle">Add New Patient</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" th:field="*{id}">
+                        <div class="row g-3">
+                            <div class="col-md-6"><label>Username *</label><input type="text" class="form-control" th:field="*{username}" required></div>
+                            <div class="col-md-6"><label>Password <span id="passReq">*</span></label><input type="text" class="form-control" th:field="*{password}"></div>
+                            <div class="col-md-6"><label>Full Name *</label><input type="text" class="form-control" th:field="*{name}" required></div>
+                            <div class="col-md-3"><label>Age *</label><input type="number" class="form-control" th:field="*{age}" required></div>
+                            <div class="col-md-3"><label>Gender</label><select class="form-select" th:field="*{gender}"><option>Male</option><option>Female</option><option>Other</option></select></div>
+                            <div class="col-md-6"><label>Phone *</label><input type="tel" class="form-control" th:field="*{phone}" required></div>
+                            <div class="col-md-6"><label>Email</label><input type="email" class="form-control" th:field="*{email}"></div>
+                            <div class="col-md-12"><label>Address</label><textarea class="form-control" th:field="*{address}" rows="2"></textarea></div>
+                            <div class="col-md-6"><label>Blood Group</label><select class="form-select" th:field="*{bloodGroup}"><option value="">Unknown</option><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Patient</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script th:inline="javascript">
+    function resetForm() {
+        document.getElementById('patientModal').querySelector('form').reset();
+        document.querySelector('input[name="id"]').value = '';
+        document.getElementById('modalTitle').textContent = 'Add New Patient';
+        document.getElementById('passReq').style.display = 'inline';
+        document.querySelector('input[name="password"]').required = true;
+    }
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const form = document.querySelector('#patientModal form');
+            form.querySelector('input[name="id"]').value = this.dataset.id;
+            form.querySelector('input[name="username"]').value = this.dataset.username;
+            form.querySelector('input[name="password"]').value = '';
+            form.querySelector('input[name="name"]').value = this.dataset.name;
+            form.querySelector('input[name="age"]').value = this.dataset.age;
+            form.querySelector('select[name="gender"]').value = this.dataset.gender;
+            form.querySelector('input[name="phone"]').value = this.dataset.phone;
+            form.querySelector('input[name="email"]').value = this.dataset.email;
+            form.querySelector('textarea[name="address"]').value = this.dataset.address;
+            form.querySelector('select[name="bloodGroup"]').value = this.dataset.blood;
+            document.getElementById('modalTitle').textContent = 'Edit Patient';
+            document.getElementById('passReq').style.display = 'none';
+            form.querySelector('input[name="password"]').required = false;
+            new bootstrap.Modal(document.getElementById('patientModal')).show();
+        });
+    });
+    // Search/filter logic (simplified; full version in script.js)
+    document.getElementById('searchInput').addEventListener('keyup', filterTable);
+    document.getElementById('genderFilter').addEventListener('change', filterTable);
+    document.getElementById('bloodFilter').addEventListener('change', filterTable);
+    function filterTable() { /* ... */ }
+</script>
+</th:block>
+</body>
+</html>

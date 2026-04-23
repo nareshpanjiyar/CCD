@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>Admissions & Discharge</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-procedures me-2"></i>Admissions & Discharge Management</h2>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="filter-section">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold"><i class="fas fa-search me-1"></i>Search Patient</label>
+                <input type="text" id="searchInput" class="form-control" placeholder="Name, phone...">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold"><i class="fas fa-filter me-1"></i>Status</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="all">All Patients</option>
+                    <option value="Admitted">Admitted</option>
+                    <option value="Discharged">Discharged</option>
+                    <option value="none">Not Admitted</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                    <i class="fas fa-times me-1"></i>Clear Filters
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patients Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 searchable-table" id="admissionsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Age/Gender</th>
+                            <th>Phone</th>
+                            <th>Admission Date</th>
+                            <th>Discharge Date</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="patient : ${patients}">
+                            <td th:text="${patient.id}"></td>
+                            <td th:text="${patient.name}"></td>
+                            <td th:text="${patient.age} + ' / ' + ${patient.gender}"></td>
+                            <td th:text="${patient.phone}"></td>
+                            <td th:text="${patient.admissionDate} ? ${#temporals.format(patient.admissionDate, 'MMM dd, yyyy')} : '—'"></td>
+                            <td th:text="${patient.dischargeDate} ? ${#temporals.format(patient.dischargeDate, 'MMM dd, yyyy')} : '—'"></td>
+                            <td>
+                                <span class="badge status-badge" 
+                                      th:classappend="${patient.status == 'Admitted' ? 'bg-warning' : (patient.status == 'Discharged' ? 'bg-secondary' : 'bg-light text-dark')}"
+                                      th:text="${patient.status} ?: 'Not Admitted'"></span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary"
+                                        th:attr="data-id=${patient.id}, data-name=${patient.name}, data-status=${patient.status}, data-admission=${patient.admissionDate} ? ${#temporals.format(patient.admissionDate, 'yyyy-MM-dd')} : ''"
+                                        onclick="openModal(this)">
+                                    <i class="fas fa-edit me-1"></i>Update
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${patients.empty}">
+                            <td colspan="8" class="text-center py-4 text-muted">No patients found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Update Status Modal -->
+    <div class="modal fade" id="statusModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/admin/admissions/update}" method="post">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title"><i class="fas fa-procedures me-2"></i>Update Patient Status</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="patientId" id="modalPatientId">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Patient</label>
+                            <input type="text" class="form-control" id="modalPatientName" readonly disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">New Status</label>
+                            <select class="form-select" name="status" id="modalStatus" onchange="toggleAdmissionDate()">
+                                <option value="">Not Admitted</option>
+                                <option value="Admitted">Admit Patient</option>
+                                <option value="Discharged">Discharge Patient</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="admissionDateGroup" style="display:none;">
+                            <label class="form-label fw-semibold">Admission Date</label>
+                            <input type="date" class="form-control" name="admissionDate" id="admissionDate">
+                        </div>
+                        <div class="alert alert-info small mb-0" id="dischargeNote" style="display:none;">
+                            <i class="fas fa-info-circle me-1"></i>Discharge date will be set automatically to today.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script th:inline="javascript">
+    function openModal(btn) {
+        const id = btn.dataset.id;
+        const name = btn.dataset.name;
+        const status = btn.dataset.status || '';
+        const admissionDate = btn.dataset.admission || '';
+
+        document.getElementById('modalPatientId').value = id;
+        document.getElementById('modalPatientName').value = name;
+        document.getElementById('modalStatus').value = status === 'Not Admitted' ? '' : status;
+        document.getElementById('admissionDate').value = admissionDate || new Date().toISOString().split('T')[0];
+        toggleAdmissionDate();
+        new bootstrap.Modal(document.getElementById('statusModal')).show();
+    }
+
+    function toggleAdmissionDate() {
+        const status = document.getElementById('modalStatus').value;
+        document.getElementById('admissionDateGroup').style.display = status === 'Admitted' ? 'block' : 'none';
+        document.getElementById('dischargeNote').style.display = status === 'Discharged' ? 'block' : 'none';
+    }
+
+    // Filter functionality
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const rows = document.querySelectorAll('#admissionsTable tbody tr');
+
+    function filterTable() {
+        const term = searchInput.value.toLowerCase();
+        const statusVal = statusFilter.value;
+        rows.forEach(row => {
+            if (row.cells.length < 8) return;
+            const text = row.textContent.toLowerCase();
+            const statusBadge = row.querySelector('.status-badge');
+            const status = statusBadge ? statusBadge.textContent.trim() : 'Not Admitted';
+            let show = term === '' || text.includes(term);
+            if (statusVal !== 'all') {
+                if (statusVal === 'none' && status !== 'Not Admitted') show = false;
+                else if (statusVal !== 'none' && status !== statusVal) show = false;
+            }
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+
+    function clearFilters() {
+        searchInput.value = '';
+        statusFilter.value = 'all';
+        filterTable();
+    }
+</script>
+</th:block>
+</body>
+</html>

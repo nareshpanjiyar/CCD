@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>Doctor Dashboard</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h2 class="mb-4"><i class="fas fa-user-md me-2"></i>Doctor Dashboard</h2>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Total Appointments</h6>
+                            <h2 class="mb-0" th:text="${totalAppointments}"></h2>
+                        </div>
+                        <i class="fas fa-calendar-check fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Upcoming</h6>
+                            <h2 class="mb-0" th:text="${upcomingAppointments}"></h2>
+                        </div>
+                        <i class="fas fa-clock fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Prescriptions</h6>
+                            <h2 class="mb-0" th:text="${totalPrescriptions}"></h2>
+                        </div>
+                        <i class="fas fa-prescription-bottle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Completed</h6>
+                            <h2 class="mb-0" th:text="${completedAppointments}"></h2>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Appointments Table -->
+    <div class="card">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Recent Appointments</h5>
+            <a th:href="@{/doctor/appointments}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Date & Time</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="appt : ${recentAppointments}">
+                            <td th:text="${appt.patient.name}"></td>
+                            <td th:text="${#temporals.format(appt.appointmentDate, 'MMM dd, yyyy hh:mm a')}"></td>
+                            <td th:text="${appt.reason} ?: '—'"></td>
+                            <td>
+                                <span class="badge" th:classappend="|bg-${appt.status == 'Scheduled' ? 'primary' : (appt.status == 'Completed' ? 'success' : 'danger')}|"
+                                      th:text="${appt.status}"></span>
+                            </td>
+                            <td>
+                                <a th:if="${appt.status == 'Scheduled'}" 
+                                   th:href="@{/doctor/prescriptions/new(patientId=${appt.patient.id}, appointmentId=${appt.id})}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-prescription"></i> Prescribe
+                                </a>
+                                <span th:unless="${appt.status == 'Scheduled'}" class="text-muted">—</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${recentAppointments.empty}">
+                            <td colspan="5" class="text-center text-muted">No recent appointments</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

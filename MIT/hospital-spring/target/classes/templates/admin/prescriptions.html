@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>Prescriptions Management</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-prescription me-2"></i>Prescriptions Management</h2>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="filter-section">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold"><i class="fas fa-search me-1"></i>Search</label>
+                <input type="text" id="searchInput" class="form-control" placeholder="Patient, doctor, diagnosis...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold"><i class="fas fa-filter me-1"></i>Status</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="all">All</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold"><i class="fas fa-calendar me-1"></i>Date</label>
+                <input type="date" id="dateFilter" class="form-control">
+            </div>
+            <div class="col-md-1">
+                <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescriptions Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 searchable-table" id="prescriptionsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Date</th>
+                            <th>Diagnosis</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="presc : ${prescriptions}">
+                            <td th:text="${presc.id}"></td>
+                            <td th:text="${presc.patient.name}"></td>
+                            <td th:text="${presc.doctor.name}"></td>
+                            <td th:text="${#temporals.format(presc.prescriptionDate, 'MMM dd, yyyy hh:mm a')}"></td>
+                            <td th:text="${presc.diagnosis} ?: '—'"></td>
+                            <td>
+                                <span class="badge status-badge" 
+                                      th:classappend="${presc.status == 'Active' ? 'bg-success' : (presc.status == 'Completed' ? 'bg-secondary' : 'bg-danger')}"
+                                      th:text="${presc.status}"></span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-info view-btn"
+                                        th:attr="data-id=${presc.id}">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                            </td>
+                        </tr>
+                        <tr th:if="${prescriptions.empty}">
+                            <td colspan="7" class="text-center py-4 text-muted">No prescriptions found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescription Detail Modal -->
+    <div class="modal fade" id="viewPrescriptionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title"><i class="fas fa-prescription-bottle me-2"></i>Prescription Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Patient:</dt>
+                                <dd class="col-sm-8" id="modalPatient"></dd>
+                                <dt class="col-sm-4">Doctor:</dt>
+                                <dd class="col-sm-8" id="modalDoctor"></dd>
+                                <dt class="col-sm-4">Date:</dt>
+                                <dd class="col-sm-8" id="modalDate"></dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8" id="modalStatus"></dd>
+                                <dt class="col-sm-4">Diagnosis:</dt>
+                                <dd class="col-sm-8" id="modalDiagnosis"></dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <h6 class="fw-bold mb-3"><i class="fas fa-pills me-2"></i>Prescribed Medications</h6>
+                    <div id="medicationsList"></div>
+                    <div class="mt-4">
+                        <h6 class="fw-bold"><i class="fas fa-sticky-note me-2"></i>Notes</h6>
+                        <p id="modalNotes" class="mb-0"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script th:inline="javascript">
+    // View button handler with AJAX fetch of prescription details
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            try {
+                const response = await fetch(`/admin/prescriptions/${id}`);
+                if (!response.ok) throw new Error('Failed to load prescription');
+                const presc = await response.json();
+                
+                // Populate basic info
+                document.getElementById('modalPatient').textContent = presc.patient.name;
+                document.getElementById('modalDoctor').textContent = presc.doctor.name + ' (' + presc.doctor.specialization + ')';
+                document.getElementById('modalDate').textContent = new Date(presc.prescriptionDate).toLocaleString();
+                document.getElementById('modalDiagnosis').textContent = presc.diagnosis || '—';
+                document.getElementById('modalNotes').textContent = presc.notes || 'No additional notes.';
+                
+                // Status badge
+                const status = presc.status;
+                const statusClass = status === 'Active' ? 'success' : (status === 'Completed' ? 'secondary' : 'danger');
+                document.getElementById('modalStatus').innerHTML = `<span class="badge bg-${statusClass}">${status}</span>`;
+                
+                // Medications list
+                const container = document.getElementById('medicationsList');
+                if (presc.items && presc.items.length > 0) {
+                    let html = '';
+                    presc.items.forEach(item => {
+                        html += `
+                            <div class="medication-item">
+                                <div class="row">
+                                    <div class="col-md-3"><strong>${item.drug.name}</strong></div>
+                                    <div class="col-md-3"><i class="fas fa-capsules me-1"></i>${item.dosage}</div>
+                                    <div class="col-md-3"><i class="fas fa-clock me-1"></i>${item.frequency}</div>
+                                    <div class="col-md-3"><i class="fas fa-calendar me-1"></i>${item.duration}</div>
+                                </div>
+                                ${item.instructions ? `<div class="row mt-1"><div class="col-12"><small class="text-muted"><i class="fas fa-info-circle me-1"></i>${item.instructions}</small></div></div>` : ''}
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted">No medications prescribed.</p>';
+                }
+                
+                new bootstrap.Modal(document.getElementById('viewPrescriptionModal')).show();
+            } catch (error) {
+                alert('Error loading prescription details: ' + error.message);
+            }
+        });
+    });
+
+    // Filter functionality
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const rows = document.querySelectorAll('#prescriptionsTable tbody tr');
+
+    function filterTable() {
+        const term = searchInput.value.toLowerCase();
+        const status = statusFilter.value;
+        const date = dateFilter.value;
+        rows.forEach(row => {
+            if (row.cells.length < 7) return;
+            const text = row.textContent.toLowerCase();
+            const rowStatus = row.querySelector('.status-badge')?.textContent.trim() || '';
+            const rowDate = row.cells[3]?.textContent.trim() || '';
+            let show = term === '' || text.includes(term);
+            if (status !== 'all' && rowStatus !== status) show = false;
+            if (date) {
+                // Convert display date to ISO for comparison
+                const displayDate = new Date(rowDate);
+                if (!isNaN(displayDate)) {
+                    const isoDate = displayDate.toISOString().split('T')[0];
+                    if (isoDate !== date) show = false;
+                }
+            }
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+    dateFilter.addEventListener('change', filterTable);
+
+    function clearFilters() {
+        searchInput.value = '';
+        statusFilter.value = 'all';
+        dateFilter.value = '';
+        filterTable();
+    }
+</script>
+</th:block>
+</body>
+</html>

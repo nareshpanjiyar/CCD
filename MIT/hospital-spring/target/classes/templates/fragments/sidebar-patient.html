@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <!-- Patient Sidebar Fragment -->
+    <nav id="sidebar" class="bg-dark text-white" th:fragment="sidebar-patient">
+        <div class="sidebar-header p-3">
+            <h4><i class="fas fa-user me-2"></i>Patient Portal</h4>
+        </div>
+        <ul class="list-unstyled components">
+            <li th:classappend="${#strings.contains(currentPage, 'dashboard')} ? 'active'">
+                <a th:href="@{/patient/dashboard}">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li th:classappend="${#strings.contains(currentPage, 'appointments')} ? 'active'">
+                <a th:href="@{/patient/appointments}">
+                    <i class="fas fa-calendar-check me-2"></i>My Appointments
+                </a>
+            </li>
+            <li th:classappend="${#strings.contains(currentPage, 'prescriptions')} ? 'active'">
+                <a th:href="@{/patient/prescriptions}">
+                    <i class="fas fa-prescription me-2"></i>My Prescriptions
+                </a>
+            </li>
+            <li th:classappend="${#strings.contains(currentPage, 'billing')} ? 'active'">
+                <a th:href="@{/patient/billing}">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>My Bills
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </a>
+            </li>
+        </ul>
+    </nav>
+</body>
+</html>

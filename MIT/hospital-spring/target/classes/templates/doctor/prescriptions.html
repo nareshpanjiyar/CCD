@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>Prescriptions</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-prescription-bottle me-2"></i>Prescriptions</h2>
+        <a th:href="@{/doctor/prescriptions/new}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Write New Prescription
+        </a>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show">
+        <span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="filter-section">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search by patient or diagnosis...">
+            </div>
+            <div class="col-md-3">
+                <select id="statusFilter" class="form-select">
+                    <option value="all">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" id="dateFilter" class="form-control">
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescriptions Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="prescriptionsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Diagnosis</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="presc : ${prescriptions}">
+                            <td th:text="${presc.id}"></td>
+                            <td th:text="${presc.patient.name}"></td>
+                            <td th:text="${#temporals.format(presc.prescriptionDate, 'MMM dd, yyyy')}"></td>
+                            <td th:text="${presc.diagnosis} ?: '—'"></td>
+                            <td>
+                                <span class="badge" th:classappend="|bg-${presc.status == 'Active' ? 'success' : (presc.status == 'Completed' ? 'secondary' : 'danger')}|"
+                                      th:text="${presc.status}"></span>
+                            </td>
+                            <td>
+                                <a th:href="@{/doctor/prescriptions/view/{id}(id=${presc.id})}" class="btn btn-sm btn-outline-info">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${prescriptions.empty}">
+                            <td colspan="6" class="text-center py-4 text-muted">No prescriptions found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script th:inline="javascript">
+    // Basic filter
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const rows = document.querySelectorAll('#prescriptionsTable tbody tr');
+
+    function filterTable() {
+        const term = searchInput.value.toLowerCase();
+        const status = statusFilter.value;
+        const date = dateFilter.value;
+        rows.forEach(row => {
+            if (row.cells.length < 6) return;
+            const text = row.textContent.toLowerCase();
+            const badge = row.querySelector('.badge');
+            const rowStatus = badge ? badge.textContent.trim() : '';
+            const rowDate = row.cells[2]?.textContent.trim() || '';
+            let show = term === '' || text.includes(term);
+            if (status !== 'all' && rowStatus !== status) show = false;
+            if (date && !rowDate.includes(date)) show = false;
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+    dateFilter.addEventListener('change', filterTable);
+</script>
+</th:block>
+</body>
+</html>

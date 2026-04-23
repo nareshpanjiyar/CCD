@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>My Prescriptions</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h2 class="mb-4"><i class="fas fa-prescription me-2"></i>My Prescriptions</h2>
+
+    <!-- Search & Filter -->
+    <div class="filter-section">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search by doctor or diagnosis...">
+            </div>
+            <div class="col-md-3">
+                <select id="statusFilter" class="form-select">
+                    <option value="all">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" id="dateFilter" class="form-control">
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescriptions List -->
+    <div class="row g-3" id="prescriptionsList">
+        <div class="col-12" th:each="presc : ${prescriptions}">
+            <div class="card prescription-card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3">
+                            <h5 class="mb-1" th:text="'Dr. ' + ${presc.doctor.name}"></h5>
+                            <p class="mb-0 text-muted" th:text="${presc.doctor.specialization}"></p>
+                        </div>
+                        <div class="col-md-3">
+                            <i class="fas fa-calendar-alt text-primary me-2"></i>
+                            <span th:text="${#temporals.format(presc.prescriptionDate, 'MMM dd, yyyy hh:mm a')}"></span>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>Diagnosis:</strong> <span th:text="${presc.diagnosis} ?: 'Not recorded'"></span>
+                        </div>
+                        <div class="col-md-2">
+                            <span class="badge" th:classappend="|bg-${presc.status == 'Active' ? 'success' : (presc.status == 'Completed' ? 'secondary' : 'danger')}|"
+                                  th:text="${presc.status}"></span>
+                        </div>
+                        <div class="col-md-1 text-end">
+                            <button class="btn btn-sm btn-outline-primary view-btn"
+                                    th:attr="data-id=${presc.id}">
+                                <i class="fas fa-eye"></i> View
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div th:if="${prescriptions.empty}" class="col-12">
+            <div class="alert alert-info">No prescriptions found.</div>
+        </div>
+    </div>
+
+    <!-- Prescription Detail Modal -->
+    <div class="modal fade" id="viewPrescriptionModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Prescription Details</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Doctor:</dt>
+                                <dd class="col-sm-8" id="modalDoctor"></dd>
+                                <dt class="col-sm-4">Date:</dt>
+                                <dd class="col-sm-8" id="modalDate"></dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row">
+                                <dt class="col-sm-4">Status:</dt>
+                                <dd class="col-sm-8" id="modalStatus"></dd>
+                                <dt class="col-sm-4">Diagnosis:</dt>
+                                <dd class="col-sm-8" id="modalDiagnosis"></dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <h6 class="fw-bold mb-3">Prescribed Medications</h6>
+                    <div id="medicationsList"></div>
+                    <div class="mt-4">
+                        <h6 class="fw-bold">Notes</h6>
+                        <p id="modalNotes"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script th:inline="javascript">
+    // Filter logic
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const cards = document.querySelectorAll('#prescriptionsList .col-12');
+
+    function filterCards() {
+        const term = searchInput.value.toLowerCase();
+        const status = statusFilter.value;
+        const date = dateFilter.value;
+        cards.forEach(card => {
+            const doctor = card.querySelector('h5')?.textContent.toLowerCase() || '';
+            const badge = card.querySelector('.badge');
+            const cardStatus = badge ? badge.textContent.trim() : '';
+            const dateText = card.querySelector('.fa-calendar-alt + span')?.textContent.trim() || '';
+            let show = term === '' || doctor.includes(term);
+            if (status !== 'all' && cardStatus !== status) show = false;
+            if (date && !dateText.includes(date)) show = false;
+            card.style.display = show ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('keyup', filterCards);
+    statusFilter.addEventListener('change', filterCards);
+    dateFilter.addEventListener('change', filterCards);
+
+    // View modal with AJAX
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            try {
+                const response = await fetch(`/patient/prescriptions/${id}`);
+                const presc = await response.json();
+                
+                document.getElementById('modalDoctor').textContent = `Dr. ${presc.doctor.name} (${presc.doctor.specialization})`;
+                document.getElementById('modalDate').textContent = new Date(presc.prescriptionDate).toLocaleString();
+                document.getElementById('modalDiagnosis').textContent = presc.diagnosis || 'Not recorded';
+                document.getElementById('modalNotes').textContent = presc.notes || 'No additional notes.';
+                
+                const status = presc.status;
+                const statusClass = status === 'Active' ? 'success' : (status === 'Completed' ? 'secondary' : 'danger');
+                document.getElementById('modalStatus').innerHTML = `<span class="badge bg-${statusClass}">${status}</span>`;
+                
+                const container = document.getElementById('medicationsList');
+                if (presc.items && presc.items.length > 0) {
+                    let html = '';
+                    presc.items.forEach(item => {
+                        html += `<div class="medication-item">
+                            <div class="row"><div class="col-md-3"><strong>${item.drug.name}</strong></div>
+                            <div class="col-md-3">${item.dosage}</div><div class="col-md-3">${item.frequency}</div>
+                            <div class="col-md-3">${item.duration}</div></div>
+                            ${item.instructions ? `<small class="text-muted">${item.instructions}</small>` : ''}
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-muted">No medications prescribed.</p>';
+                }
+                new bootstrap.Modal(document.getElementById('viewPrescriptionModal')).show();
+            } catch (err) {
+                alert('Error loading prescription');
+            }
+        });
+    });
+</script>
+</th:block>
+</body>
+</html>

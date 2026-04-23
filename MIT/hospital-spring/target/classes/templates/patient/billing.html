@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>My Bills</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h2 class="mb-4"><i class="fas fa-file-invoice-dollar me-2"></i>My Billing</h2>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card stats-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Pending Amount</h6>
+                            <h3 class="mb-0">₹<span th:text="${#numbers.formatDecimal(totalPending, 1, 2)}"></span></h3>
+                        </div>
+                        <i class="fas fa-clock fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Total Paid</h6>
+                            <h3 class="mb-0">₹<span th:text="${#numbers.formatDecimal(totalPaid, 1, 2)}"></span></h3>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Total Bills</h6>
+                            <h3 class="mb-0" th:text="${bills.size()}"></h3>
+                        </div>
+                        <i class="fas fa-receipt fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="filter-section">
+        <div class="row g-3">
+            <div class="col-md-6">
+                <input type="text" id="searchInput" class="form-control" placeholder="Search by description...">
+            </div>
+            <div class="col-md-3">
+                <select id="statusFilter" class="form-select">
+                    <option value="all">All Statuses</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <input type="date" id="dateFilter" class="form-control">
+            </div>
+        </div>
+    </div>
+
+    <!-- Bills Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="billsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Bill #</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="bill : ${bills}">
+                            <td th:text="${bill.id}"></td>
+                            <td class="amount-positive">₹<span th:text="${#numbers.formatDecimal(bill.amount, 1, 2)}"></span></td>
+                            <td th:text="${#temporals.format(bill.billingDate, 'MMM dd, yyyy')}"></td>
+                            <td th:text="${bill.description} ?: '—'"></td>
+                            <td>
+                                <span class="badge" th:classappend="|bg-${bill.status == 'Paid' ? 'success' : (bill.status == 'Pending' ? 'warning' : 'secondary')}|"
+                                      th:text="${bill.status}"></span>
+                            </td>
+                        </tr>
+                        <tr th:if="${bills.empty}">
+                            <td colspan="5" class="text-center py-4 text-muted">No bills found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script th:inline="javascript">
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFilter = document.getElementById('dateFilter');
+    const rows = document.querySelectorAll('#billsTable tbody tr');
+
+    function filterTable() {
+        const term = searchInput.value.toLowerCase();
+        const status = statusFilter.value;
+        const date = dateFilter.value;
+        rows.forEach(row => {
+            if (row.cells.length < 5) return;
+            const text = row.textContent.toLowerCase();
+            const badge = row.querySelector('.badge');
+            const rowStatus = badge ? badge.textContent.trim() : '';
+            const rowDate = row.cells[2]?.textContent.trim() || '';
+            let show = term === '' || text.includes(term);
+            if (status !== 'all' && rowStatus !== status) show = false;
+            if (date && !rowDate.includes(date)) show = false;
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+    dateFilter.addEventListener('change', filterTable);
+</script>
+</th:block>
+</body>
+</html>

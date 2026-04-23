@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>Register New Patient</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <h2 class="mb-4"><i class="fas fa-user-plus me-2"></i>Register New Patient</h2>
+
+    <!-- Alert Messages -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show">
+        <i class="fas fa-check-circle me-2"></i><span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show">
+        <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form th:action="@{/receptionist/register-patient}" method="post" th:object="${patientDto}">
+                <div class="row g-3">
+                    <!-- Username -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Username <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{username}" placeholder="Enter username" required>
+                    </div>
+                    
+                    <!-- Password -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Password <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{password}" placeholder="Enter password" required>
+                    </div>
+                    
+                    <!-- Full Name -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" th:field="*{name}" placeholder="Enter full name" required>
+                    </div>
+                    
+                    <!-- Age -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Age <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" th:field="*{age}" min="1" max="150" placeholder="Age" required>
+                    </div>
+                    
+                    <!-- Gender -->
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Gender</label>
+                        <select class="form-select" th:field="*{gender}">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Phone -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Phone <span class="text-danger">*</span></label>
+                        <input type="tel" class="form-control" th:field="*{phone}" placeholder="Enter phone number" required>
+                    </div>
+                    
+                    <!-- Email -->
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Email</label>
+                        <input type="email" class="form-control" th:field="*{email}" placeholder="Enter email (optional)">
+                    </div>
+                    
+                    <!-- Address -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Address</label>
+                        <textarea class="form-control" th:field="*{address}" rows="2" placeholder="Enter address (optional)"></textarea>
+                    </div>
+                    
+                    <!-- Blood Group -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Blood Group</label>
+                        <select class="form-select" th:field="*{bloodGroup}">
+                            <option value="">Unknown</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Admission Date -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Admission Date</label>
+                        <input type="date" class="form-control" th:field="*{admissionDate}">
+                    </div>
+                    
+                    <!-- Status (Admitted/Discharged) -->
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Status</label>
+                        <select class="form-select" th:field="*{status}">
+                            <option value="">Not Admitted</option>
+                            <option value="Admitted">Admitted</option>
+                            <option value="Discharged">Discharged</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Submit Button -->
+                    <div class="col-12">
+                        <hr>
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="fas fa-save me-2"></i>Register Patient
+                        </button>
+                        <a th:href="@{/receptionist/dashboard}" class="btn btn-secondary ms-2">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Info Note -->
+    <div class="alert alert-info mt-3">
+        <i class="fas fa-info-circle me-2"></i>
+        <strong>Note:</strong> A patient account will be created with the provided username and password. The patient can use these credentials to log in to the patient portal.
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script th:inline="javascript">
+    // Set default admission date to today if status is Admitted and date is empty
+    document.querySelector('select[name="status"]').addEventListener('change', function() {
+        const admissionDateInput = document.querySelector('input[name="admissionDate"]');
+        if (this.value === 'Admitted' && !admissionDateInput.value) {
+            const today = new Date().toISOString().split('T')[0];
+            admissionDateInput.value = today;
+        }
+    });
+</script>
+</th:block>
+</body>
+</html>

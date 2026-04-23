@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <!-- Receptionist Sidebar Fragment -->
+    <nav id="sidebar" class="bg-dark text-white" th:fragment="sidebar-receptionist">
+        <div class="sidebar-header p-3">
+            <h4><i class="fas fa-user-tie me-2"></i>Receptionist</h4>
+        </div>
+        <ul class="list-unstyled components">
+            <li th:classappend="${#strings.contains(currentPage, 'dashboard')} ? 'active'">
+                <a th:href="@{/receptionist/dashboard}">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                </a>
+            </li>
+            <li th:classappend="${#strings.contains(currentPage, 'register-patient')} ? 'active'">
+                <a th:href="@{/receptionist/register-patient}">
+                    <i class="fas fa-user-plus me-2"></i>Register Patient
+                </a>
+            </li>
+            <li th:classappend="${#strings.contains(currentPage, 'appointments')} ? 'active'">
+                <a th:href="@{/receptionist/appointments}">
+                    <i class="fas fa-calendar-check me-2"></i>Appointments
+                </a>
+            </li>
+            <li th:classappend="${#strings.contains(currentPage, 'billing')} ? 'active'">
+                <a th:href="@{/receptionist/billing}">
+                    <i class="fas fa-file-invoice-dollar me-2"></i>Billing
+                </a>
+            </li>
+            <li th:classappend="${#strings.contains(currentPage, 'admissions')} ? 'active'">
+                <a th:href="@{/receptionist/admissions}">
+                    <i class="fas fa-procedures me-2"></i>Admissions / Discharge
+                </a>
+            </li>
+            <li>
+                <a th:href="@{/logout}">
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                </a>
+            </li>
+        </ul>
+    </nav>
+</body>
+</html>

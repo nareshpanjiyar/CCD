@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{fragments/layout}">
+<head>
+    <title>Billing Management</title>
+</head>
+<body>
+<div layout:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-file-invoice-dollar me-2"></i>Billing Management</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#billingModal" onclick="resetForm()">
+            <i class="fas fa-plus-circle me-2"></i>Generate New Bill
+        </button>
+    </div>
+
+    <!-- Alert Messages -->
+    <div th:if="${message}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><span th:text="${message}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><span th:text="${error}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Total Revenue</h6>
+                            <h3 class="mb-0">₹<span th:text="${#numbers.formatDecimal(totalRevenue, 1, 2)}"></span></h3>
+                        </div>
+                        <i class="fas fa-coins fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Pending Amount</h6>
+                            <h3 class="mb-0">₹<span th:text="${#numbers.formatDecimal(pendingAmount, 1, 2)}"></span></h3>
+                        </div>
+                        <i class="fas fa-clock fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Pending Bills</h6>
+                            <h3 class="mb-0" th:text="${pendingCount}"></h3>
+                        </div>
+                        <i class="fas fa-file-invoice fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stats-card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title">Total Bills</h6>
+                            <h3 class="mb-0" th:text="${bills.size()}"></h3>
+                        </div>
+                        <i class="fas fa-receipt fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="filter-section">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold"><i class="fas fa-search me-1"></i>Search</label>
+                <input type="text" id="searchInput" class="form-control" placeholder="Patient name, description...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-semibold"><i class="fas fa-filter me-1"></i>Status</label>
+                <select id="statusFilter" class="form-select">
+                    <option value="all">All</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold"><i class="fas fa-calendar me-1"></i>Date Range</label>
+                <div class="input-group">
+                    <input type="date" id="dateFrom" class="form-control">
+                    <span class="input-group-text">to</span>
+                    <input type="date" id="dateTo" class="form-control">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bills Table -->
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 searchable-table" id="billsTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Bill #</th>
+                            <th>Patient</th>
+                            <th>Amount</th>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="bill : ${bills}">
+                            <td th:text="${bill.id}"></td>
+                            <td th:text="${bill.patient.name}"></td>
+                            <td class="amount-positive">₹<span th:text="${#numbers.formatDecimal(bill.amount, 1, 2)}"></span></td>
+                            <td th:text="${#temporals.format(bill.billingDate, 'MMM dd, yyyy')}"></td>
+                            <td th:text="${bill.description} ?: '—'"></td>
+                            <td>
+                                <span class="badge status-badge" 
+                                      th:classappend="${bill.status == 'Paid' ? 'bg-success' : (bill.status == 'Pending' ? 'bg-warning' : 'bg-secondary')}"
+                                      th:text="${bill.status}"></span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-primary edit-btn"
+                                        th:attr="data-id=${bill.id}, data-patient=${bill.patient.id}, data-amount=${bill.amount}, data-date=${#temporals.format(bill.billingDate, 'yyyy-MM-dd')}, data-description=${bill.description}, data-status=${bill.status}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <a th:href="@{/admin/billing/delete/{id}(id=${bill.id})}" 
+                                   class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirmDelete('Delete this bill?')">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${bills.empty}">
+                            <td colspan="7" class="text-center py-4 text-muted">No bills found.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal fade" id="billingModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form th:action="@{/admin/billing/save}" method="post" th:object="${billingDto}">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="modalTitle">Generate New Bill</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" th:field="*{id}">
+                        <div class="mb-3">
+                            <label>Patient *</label>
+                            <select class="form-select" th:field="*{patientId}" required>
+                                <option value="">Select Patient</option>
+                                <option th:each="p : ${patients}" th:value="${p.id}" th:text="${p.name}"></option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Amount (₹) *</label>
+                            <input type="number" step="0.01" class="form-control" th:field="*{amount}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Billing Date *</label>
+                            <input type="date" class="form-control" th:field="*{billingDate}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Description</label>
+                            <textarea class="form-control" th:field="*{description}" rows="2" placeholder="e.g., Consultation fee, Lab tests..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label>Status</label>
+                            <select class="form-select" th:field="*{status}">
+                                <option value="Pending">Pending</option>
+                                <option value="Paid">Paid</option>
+                                <option value="Cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Bill</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<th:block layout:fragment="scripts">
+<script th:inline="javascript">
+    function resetForm() {
+        const form = document.querySelector('#billingModal form');
+        form.reset();
+        form.querySelector('input[name="id"]').value = '';
+        document.getElementById('modalTitle').textContent = 'Generate New Bill';
+        // Set default date to today
+        const today = new Date().toISOString().split('T')[0];
+        form.querySelector('input[name="billingDate"]').value = today;
+    }
+
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const form = document.querySelector('#billingModal form');
+            form.querySelector('input[name="id"]').value = this.dataset.id;
+            form.querySelector('select[name="patientId"]').value = this.dataset.patient;
+            form.querySelector('input[name="amount"]').value = this.dataset.amount;
+            form.querySelector('input[name="billingDate"]').value = this.dataset.date;
+            form.querySelector('textarea[name="description"]').value = this.dataset.description;
+            form.querySelector('select[name="status"]').value = this.dataset.status;
+            document.getElementById('modalTitle').textContent = 'Edit Bill';
+            new bootstrap.Modal(document.getElementById('billingModal')).show();
+        });
+    });
+
+    // Filter functionality
+    const searchInput = document.getElementById('searchInput');
+    const statusFilter = document.getElementById('statusFilter');
+    const dateFrom = document.getElementById('dateFrom');
+    const dateTo = document.getElementById('dateTo');
+    const rows = document.querySelectorAll('#billsTable tbody tr');
+
+    function filterTable() {
+        const term = searchInput.value.toLowerCase();
+        const status = statusFilter.value;
+        const from = dateFrom.value;
+        const to = dateTo.value;
+        rows.forEach(row => {
+            if (row.cells.length < 7) return;
+            const text = row.textContent.toLowerCase();
+            const rowStatus = row.querySelector('.status-badge')?.textContent.trim() || '';
+            const rowDate = row.cells[3]?.textContent.trim() || '';
+            let show = term === '' || text.includes(term);
+            if (status !== 'all' && rowStatus !== status) show = false;
+            if (from || to) {
+                const billDate = new Date(rowDate + ' 2025'); // Simplified date parse
+                const fromDate = from ? new Date(from) : null;
+                const toDate = to ? new Date(to) : null;
+                if (fromDate && billDate < fromDate) show = false;
+                if (toDate && billDate > toDate) show = false;
+            }
+            row.style.display = show ? '' : 'none';
+        });
+    }
+
+    searchInput.addEventListener('keyup', filterTable);
+    statusFilter.addEventListener('change', filterTable);
+    dateFrom.addEventListener('change', filterTable);
+    dateTo.addEventListener('change', filterTable);
+
+    function confirmDelete(msg) {
+        return confirm(msg || 'Are you sure?');
+    }
+</script>
+</th:block>
+</body>
+</html>
